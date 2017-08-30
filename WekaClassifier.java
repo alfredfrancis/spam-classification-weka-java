@@ -110,7 +110,7 @@ public class WekaClassifier {
 		filter.setAttributeIndices("last"); 
 
 		classifier.setFilter(filter); 
-		classifier.setClassifier(new NaiveBayes());
+		classifier.setClassifier(new NaiveBayesMultinomial());
 
 	}
 	public void fit() throws Exception{
