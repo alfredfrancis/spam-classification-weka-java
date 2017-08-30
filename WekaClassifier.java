@@ -22,6 +22,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
 
+import weka.core.tokenizers.WordTokenizer;
+import weka.core.tokenizers.NGramTokenizer;
+
 // http://geekswithblogs.net/razan/archive/2011/11/08/creating-a-simple-sparse-arff-file.aspx
 // http://weka.wikispaces.com/Programmatic+Use
 
@@ -36,6 +39,7 @@ public class WekaClassifier {
 
 		 //Initialize the FilteredClassifier
 		 classifier = new FilteredClassifier();
+		 classifier.setClassifier(new NaiveBayesMultinomial());
 		 
 		 // Declare text attribute
 		 Attribute attribute_text = new Attribute("text",(List<String>) null);
@@ -98,26 +102,26 @@ public class WekaClassifier {
 
 	}
 
-	public void prepare() throws Exception{
+
+	public void transform() throws Exception{
 		trainData = load("dataset/train.txt");
-		testData = load("dataset/test.txt");
-	}
-
-	public void transform(){
-
 		// create the filter and set the attribute to be transformed from text into a feature vector (the last one)
 		StringToWordVector filter = new StringToWordVector();
 		filter.setAttributeIndices("last"); 
-
+		NGramTokenizer tokenizer = new NGramTokenizer();
+		tokenizer.setNGramMinSize(1);
+		tokenizer.setNGramMaxSize(1);
+		tokenizer.setDelimiters("\\W");
+		filter.setTokenizer(tokenizer);
+		filter.setLowerCaseTokens(true);
 		classifier.setFilter(filter); 
-		classifier.setClassifier(new NaiveBayesMultinomial());
 
 	}
 	public void fit() throws Exception{
 		classifier.buildClassifier(trainData);
 	}
 
-	public String classify(String text) throws Exception  {
+	public String predict(String text) throws Exception  {
 
 			Instances newDataset = new Instances("testdata", fvWekaAttributes, 1);
 			newDataset.setClassIndex(0);
@@ -135,6 +139,7 @@ public class WekaClassifier {
 	}
 
 	public String evaluate() throws Exception{
+		testData = load("dataset/test.txt");
 		Evaluation eval = new Evaluation(testData);
 		eval.evaluateModel(classifier, testData);
 		System.out.println(eval.toSummaryString());
@@ -159,10 +164,10 @@ public class WekaClassifier {
 	public static void main(String[] args) throws Exception{
 
 		WekaClassifier wt = new WekaClassifier();
-		wt.prepare();
 		wt.transform();
 		wt.fit();
 		wt.evaluate();
-		wt.classify("free foods");
+		wt.predict("how are you ?");
+		wt.predict("free food for you");
 	}
 }
