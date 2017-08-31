@@ -32,7 +32,7 @@ import weka.filters.unsupervised.attribute.StringToWordVector;
  */
 public class WekaClassifier {
 
-	private static Logger LOGGER = Logger.getLogger("WekaClassifier");
+    private static Logger LOGGER = Logger.getLogger("WekaClassifier");
 
     private FilteredClassifier classifier;
 
@@ -64,13 +64,13 @@ public class WekaClassifier {
         Attribute attributeText = new Attribute("text", (List < String > ) null);
 
         // Declare the label attribute along with its values
-        ArrayList < String > classAttributeValues = new ArrayList <> ();
+        ArrayList < String > classAttributeValues = new ArrayList < > ();
         classAttributeValues.add("spam");
         classAttributeValues.add("ham");
         Attribute classAttribute = new Attribute("label", classAttributeValues);
 
         // Declare the feature vector
-        wekaAttributes = new ArrayList <> ();
+        wekaAttributes = new ArrayList < > ();
         wekaAttributes.add(classAttribute);
         wekaAttributes.add(attributeText);
 
@@ -80,31 +80,30 @@ public class WekaClassifier {
      * load training data and set feature generators
      */
     public void transform() {
-    	try{
-	    	trainData = loadRawDataset(TRAIN_DATA);
-	        saveArff(trainData, TRAIN_ARFF_ARFF);
+        try {
+            trainData = loadRawDataset(TRAIN_DATA);
+            saveArff(trainData, TRAIN_ARFF_ARFF);
 
-	        // create the filter and set the attribute to be transformed from text into a feature vector (the last one)
-	        StringToWordVector filter = new StringToWordVector();
-	        filter.setAttributeIndices("last");
+            // create the filter and set the attribute to be transformed from text into a feature vector (the last one)
+            StringToWordVector filter = new StringToWordVector();
+            filter.setAttributeIndices("last");
 
-	        //add ngram tokenizer to filter with min and max length set to 1
-	        NGramTokenizer tokenizer = new NGramTokenizer();
-	        tokenizer.setNGramMinSize(1);
-	        tokenizer.setNGramMaxSize(1);
-	        //use word delimeter
-	        tokenizer.setDelimiters("\\W");
-	        filter.setTokenizer(tokenizer);
+            //add ngram tokenizer to filter with min and max length set to 1
+            NGramTokenizer tokenizer = new NGramTokenizer();
+            tokenizer.setNGramMinSize(1);
+            tokenizer.setNGramMaxSize(1);
+            //use word delimeter
+            tokenizer.setDelimiters("\\W");
+            filter.setTokenizer(tokenizer);
 
-	        //convert tokens to lowercase
-	        filter.setLowerCaseTokens(true);
+            //convert tokens to lowercase
+            filter.setLowerCaseTokens(true);
 
-	        //add filter to classifier
-	        classifier.setFilter(filter);
-    	}
-    	catch(Exception e){
-			LOGGER.warning(e.getMessage());
-    	}
+            //add filter to classifier
+            classifier.setFilter(filter);
+        } catch (Exception e) {
+            LOGGER.warning(e.getMessage());
+        }
 
 
     }
@@ -112,13 +111,12 @@ public class WekaClassifier {
     /**
      * build the classifier with the Training data
      */
-    public void fit(){
-    	try{
-        	classifier.buildClassifier(trainData);
-    	}
-    	catch(Exception e){
-			LOGGER.warning(e.getMessage());
-    	}
+    public void fit() {
+        try {
+            classifier.buildClassifier(trainData);
+        } catch (Exception e) {
+            LOGGER.warning(e.getMessage());
+        }
     }
 
 
@@ -129,55 +127,53 @@ public class WekaClassifier {
      * @return a class label (spam or ham )
      */
     public String predict(String text) {
-    	try{
-	        // create new Instance for prediction.
-	        DenseInstance newinstance = new DenseInstance(2);
+        try {
+            // create new Instance for prediction.
+            DenseInstance newinstance = new DenseInstance(2);
 
-	        //weka demand a dataset to be set to new Instance
-	        Instances newDataset = new Instances("predictiondata", wekaAttributes, 1);
-	        newDataset.setClassIndex(0);
+            //weka demand a dataset to be set to new Instance
+            Instances newDataset = new Instances("predictiondata", wekaAttributes, 1);
+            newDataset.setClassIndex(0);
 
-	        newinstance.setDataset(newDataset);
+            newinstance.setDataset(newDataset);
 
-	        // text attribute value set to value to be predicted
-	        newinstance.setValue(wekaAttributes.get(1), text);
+            // text attribute value set to value to be predicted
+            newinstance.setValue(wekaAttributes.get(1), text);
 
-	        // predict most likely class for the instance
-	        double pred = classifier.classifyInstance(newinstance);
+            // predict most likely class for the instance
+            double pred = classifier.classifyInstance(newinstance);
 
-	        // return original label
-	        return newDataset.classAttribute().value((int) pred);
-    	}
-    	catch(Exception e){
-			LOGGER.warning(e.getMessage());
-			return null;
-    	}
+            // return original label
+            return newDataset.classAttribute().value((int) pred);
+        } catch (Exception e) {
+            LOGGER.warning(e.getMessage());
+            return null;
+        }
     }
 
     /**
      * evaluate the classifier with the Test data
      * @return evaluation summary as string
      */
-    public String evaluate(){
-    	try{
-	        //load testdata
-	    	Instances testData;
-	        if (new File(TEST_DATA_ARFF).exists()) {
-	            testData = loadArff(TEST_DATA_ARFF);
-	            testData.setClassIndex(0);
-	        } else {
-	            testData = loadRawDataset(TEST_DATA);
-	            saveArff(testData, TEST_DATA_ARFF);
-	        }
+    public String evaluate() {
+        try {
+            //load testdata
+            Instances testData;
+            if (new File(TEST_DATA_ARFF).exists()) {
+                testData = loadArff(TEST_DATA_ARFF);
+                testData.setClassIndex(0);
+            } else {
+                testData = loadRawDataset(TEST_DATA);
+                saveArff(testData, TEST_DATA_ARFF);
+            }
 
-	        Evaluation eval = new Evaluation(testData);
-	        eval.evaluateModel(classifier, testData);
-	        return eval.toSummaryString();
-    	}
-    	catch(Exception e){
-			LOGGER.warning(e.getMessage());
-			return null;
-    	}
+            Evaluation eval = new Evaluation(testData);
+            eval.evaluateModel(classifier, testData);
+            return eval.toSummaryString();
+        } catch (Exception e) {
+            LOGGER.warning(e.getMessage());
+            return null;
+        }
     }
 
     /**
@@ -188,14 +184,12 @@ public class WekaClassifier {
         try {
             ObjectInputStream in = new ObjectInputStream(new FileInputStream(fileName));
             Object tmp = in .readObject();
-            classifier = (FilteredClassifier) tmp;
-            in .close();
+            classifier = (FilteredClassifier) tmp; in .close();
             System.out.println("Loaded model: " + fileName);
         } catch (IOException e) {
             LOGGER.warning(e.getMessage());
-        }
-        catch (ClassNotFoundException e){
-        	LOGGER.warning(e.getMessage());
+        } catch (ClassNotFoundException e) {
+            LOGGER.warning(e.getMessage());
         }
     }
 
@@ -220,7 +214,7 @@ public class WekaClassifier {
      * Loads a dataset in space seperated text file and convert it to Arff format.
      * @param fileName The name of the file.
      */
-    public Instances loadRawDataset(String filename){
+    public Instances loadRawDataset(String filename) {
         /* 
          *  Create an empty training set
          *  name the relation “Rel”.
@@ -236,26 +230,25 @@ public class WekaClassifier {
         try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
             for (String line;
                 (line = br.readLine()) != null;) {
-                    // split at first occurance of n no. of words
-                    String[] parts = line.split("\\s+", 2);
+                // split at first occurance of n no. of words
+                String[] parts = line.split("\\s+", 2);
 
-                    // basic validation
-                    if (!parts[0].isEmpty() && !parts[1].isEmpty()) {
+                // basic validation
+                if (!parts[0].isEmpty() && !parts[1].isEmpty()) {
 
-                        DenseInstance row = new DenseInstance(2);
-                        row.setValue(wekaAttributes.get(0), parts[0]);
-                        row.setValue(wekaAttributes.get(1), parts[1]);
+                    DenseInstance row = new DenseInstance(2);
+                    row.setValue(wekaAttributes.get(0), parts[0]);
+                    row.setValue(wekaAttributes.get(1), parts[1]);
 
-                        // add row to instances
-                        dataset.add(row);
+                    // add row to instances
+                    dataset.add(row);
                 }
 
             }
 
         } catch (IOException e) {
             LOGGER.warning(e.getMessage());
-        }
-        catch (ArrayIndexOutOfBoundsException e) {
+        } catch (ArrayIndexOutOfBoundsException e) {
             System.out.println("invalid row");
         }
         return dataset;
@@ -276,7 +269,7 @@ public class WekaClassifier {
             reader.close();
             return dataset;
         } catch (IOException e) {
-        	LOGGER.warning(e.getMessage());
+            LOGGER.warning(e.getMessage());
             return null;
         }
     }
@@ -286,7 +279,7 @@ public class WekaClassifier {
      * @param dataset dataset in arff format
      * @param fileName The name of the file that stores the dataset.
      */
-    public void saveArff(Instances dataset, String filename){
+    public void saveArff(Instances dataset, String filename) {
         try {
             // initialize 
             ArffSaver arffSaverInstance = new ArffSaver();
@@ -315,10 +308,10 @@ public class WekaClassifier {
         }
 
         //run few predictions
-        LOGGER.info("text 'how are you' is "+wt.predict("how are you ?"));
-        LOGGER.info("text 'u have won the 1 lakh prize' is "+wt.predict("u have won the 1 lakh prize"));
+        LOGGER.info("text 'how are you' is " + wt.predict("how are you ?"));
+        LOGGER.info("text 'u have won the 1 lakh prize' is " + wt.predict("u have won the 1 lakh prize"));
 
         //run evaluation
- 	    LOGGER.info(wt.evaluate());
+        LOGGER.info("Evaluation Result: \n"+wt.evaluate());
     }
 }
