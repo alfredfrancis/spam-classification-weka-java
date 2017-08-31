@@ -79,6 +79,7 @@ public class WekaClassifier {
 	 */
 	public void transform() throws Exception{
 
+
 		trainData = loadRawDataset(TRAIN_DATA);
 		saveArff(trainData,TRAIN_ARFF_ARFF);
 
@@ -122,7 +123,7 @@ public class WekaClassifier {
 			DenseInstance newinstance = new DenseInstance(2);
 
 			//weka demand a dataset to be set to new Instance
-			Instances newDataset = new Instances("testdata", wekaAttributes, 1);
+			Instances newDataset = new Instances("predictiondata", wekaAttributes, 1);
 			newDataset.setClassIndex(0);
 
 			newinstance.setDataset(newDataset); 
@@ -205,7 +206,7 @@ public class WekaClassifier {
 		  *  name the relation “Rel”.
 		  *  set intial capacity of 10*
 		  */	
-		 Instances dataset = new Instances("Rel", wekaAttributes, 10);
+		 Instances dataset = new Instances("SMS spam", wekaAttributes, 10);
 
 		 // Set class index
 		 dataset.setClassIndex(0);
