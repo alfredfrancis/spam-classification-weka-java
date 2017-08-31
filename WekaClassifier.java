@@ -1,8 +1,18 @@
+import java.io.File;
+import java.io.BufferedReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+
+import java.util.List;
+import java.util.ArrayList;
+
 import weka.classifiers.Evaluation;
-import weka.classifiers.bayes.NaiveBayes;
 import weka.classifiers.bayes.NaiveBayesMultinomial;
 import weka.classifiers.meta.FilteredClassifier;
-import weka.classifiers.Evaluation;
 
 import weka.core.Instances;
 import weka.core.Instance;
@@ -10,20 +20,12 @@ import weka.core.converters.ConverterUtils.DataSource;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.converters.ArffSaver;
-import weka.classifiers.meta.FilteredClassifier;
+import weka.core.converters.ArffLoader.ArffReader;
+import weka.core.tokenizers.NGramTokenizer;
 
 import weka.filters.unsupervised.attribute.StringToWordVector;
 
-import java.io.File;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
 
-import java.util.List;
-import java.util.ArrayList;
-
-import weka.core.tokenizers.WordTokenizer;
-import weka.core.tokenizers.NGramTokenizer;
 
 // http://geekswithblogs.net/razan/archive/2011/11/08/creating-a-simple-sparse-arff-file.aspx
 // http://weka.wikispaces.com/Programmatic+Use
@@ -56,7 +58,96 @@ public class WekaClassifier {
 		 fvWekaAttributes.add(attribute_text);
 
 	}
-	public Instances load (String filename)  throws IOException
+
+	public void prepare() throws IOException{
+		trainData = loadRawDataset("dataset/train.txt");
+	}
+
+	public void transform() throws Exception{
+		// create the filter and set the attribute to be transformed from text into a feature vector (the last one)
+		StringToWordVector filter = new StringToWordVector();
+		filter.setAttributeIndices("last"); 
+		NGramTokenizer tokenizer = new NGramTokenizer();
+		tokenizer.setNGramMinSize(1);
+		tokenizer.setNGramMaxSize(1);
+		tokenizer.setDelimiters("\\W");
+		filter.setTokenizer(tokenizer);
+		filter.setLowerCaseTokens(true);
+		classifier.setFilter(filter); 
+
+	}
+
+	public void fit() throws Exception{
+		classifier.buildClassifier(trainData);
+	}
+
+	public String predict(String text) throws Exception  {
+
+			Instances newDataset = new Instances("testdata", fvWekaAttributes, 1);
+			newDataset.setClassIndex(0);
+		
+			DenseInstance newinstance = new DenseInstance(2);
+			newinstance.setDataset(newDataset); 
+
+			newinstance.setValue(fvWekaAttributes.get(1), text);
+
+			double pred = classifier.classifyInstance(newinstance);
+
+			System.out.println("Class predicted: " + trainData.classAttribute().value((int) pred));
+			return trainData.classAttribute().value((int) pred);
+	}
+
+	public String evaluate() throws Exception{
+		testData = loadRawDataset("dataset/test.txt");
+		Evaluation eval = new Evaluation(testData);
+		eval.evaluateModel(classifier, testData);
+		System.out.println(eval.toSummaryString());
+		return eval.toSummaryString();
+	}
+
+	/**
+	 * This method loads the model to be used as classifier.
+	 * @param fileName The name of the file that stores the text.
+	 */
+	public void loadModel(String fileName) {
+		try {
+			ObjectInputStream in = new ObjectInputStream(new FileInputStream(fileName));
+            Object tmp = in.readObject();
+			classifier = (FilteredClassifier) tmp;
+            in.close();
+ 			System.out.println("Loaded model: " + fileName);
+       } 
+		catch (Exception e) {
+			// Given the cast, a ClassNotFoundException must be caught along with the IOException
+			System.out.println("Problem found when reading: " + fileName);
+		}
+	}
+
+
+
+	/**
+	 * This method saves the trained model into a file. This is done by
+	 * simple serialization of the classifier object.
+	 * @param fileName The name of the file that will store the trained model.
+	 */
+
+	public void saveModel(String fileName) {
+		try {
+            ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(fileName));
+            out.writeObject(classifier);
+            out.close();
+ 			System.out.println("Saved model: "+fileName);
+        } 
+		catch (IOException e) {
+			System.out.println("Problem found when writing: " + fileName);
+		}
+	}
+
+	/**
+	 * Loads a dataset in space seperated text file and convert it to Arff format.
+	 * @param fileName The name of the file.
+	 */
+	public Instances loadRawDataset (String filename)  throws IOException
 	{
 		 /* 
 		    Create an empty training set
@@ -86,7 +177,6 @@ public class WekaClassifier {
 					  // add row to instances
 					  dataset.add(row);
 		        	}
-					// 
 		    	}
 		    	catch (ArrayIndexOutOfBoundsException e){
 					System.out.println("invalid row");
@@ -102,51 +192,29 @@ public class WekaClassifier {
 
 	}
 
-
-	public void transform() throws Exception{
-		trainData = load("dataset/train.txt");
-		// create the filter and set the attribute to be transformed from text into a feature vector (the last one)
-		StringToWordVector filter = new StringToWordVector();
-		filter.setAttributeIndices("last"); 
-		NGramTokenizer tokenizer = new NGramTokenizer();
-		tokenizer.setNGramMinSize(1);
-		tokenizer.setNGramMaxSize(1);
-		tokenizer.setDelimiters("\\W");
-		filter.setTokenizer(tokenizer);
-		filter.setLowerCaseTokens(true);
-		classifier.setFilter(filter); 
-
-	}
-	public void fit() throws Exception{
-		classifier.buildClassifier(trainData);
-	}
-
-	public String predict(String text) throws Exception  {
-
-			Instances newDataset = new Instances("testdata", fvWekaAttributes, 1);
-			newDataset.setClassIndex(0);
-		
-			DenseInstance newinstance = new DenseInstance(2);
-			newinstance.setDataset(newDataset); 
-
-			newinstance.setValue(fvWekaAttributes.get(1), text);
-
-			double pred = classifier.classifyInstance(newinstance);
-
-			System.out.println("===== Classified instance =====");
-			System.out.println("Class predicted: " + trainData.classAttribute().value((int) pred));
-			return trainData.classAttribute().value((int) pred);
+	/**
+	 * Loads a dataset in ARFF format. If the file does not exist, or
+	 * it has a wrong format, the attribute trainData is null.
+	 * @param fileName The name of the file that stores the dataset.
+	 */
+	public void loadArff(String fileName) {
+		try {
+			BufferedReader reader = new BufferedReader(new FileReader(fileName));
+			ArffReader arff = new ArffReader(reader);
+			trainData = arff.getData();
+			System.out.println("dataset: "+fileName);
+			reader.close();
+		}
+		catch (IOException e) {
+			System.out.println("Problem found when reading: "+fileName);
+		}
 	}
 
-	public String evaluate() throws Exception{
-		testData = load("dataset/test.txt");
-		Evaluation eval = new Evaluation(testData);
-		eval.evaluateModel(classifier, testData);
-		System.out.println(eval.toSummaryString());
-		return eval.toSummaryString();
-	}
-
-
+	/**
+	 * This method saves a dataset in ARFF format.
+	 * @param dataset dataset in arff format
+	 * @param fileName The name of the file that stores the dataset.
+	 */
 	public void saveArff(Instances dataset,String filename)   throws IOException{
 		try
 		{
@@ -162,10 +230,12 @@ public class WekaClassifier {
 	}
 
 	public static void main(String[] args) throws Exception{
-
 		WekaClassifier wt = new WekaClassifier();
+		wt.prepare();
 		wt.transform();
 		wt.fit();
+		wt.saveModel("models/sms.dat");
+		// wt.loadModel("models/sms.dat");
 		wt.evaluate();
 		wt.predict("how are you ?");
 		wt.predict("free food for you");
