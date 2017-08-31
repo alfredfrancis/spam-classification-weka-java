@@ -37,6 +37,11 @@ public class WekaClassifier {
 	private Instances testData;
 	private ArrayList<Attribute> fvWekaAttributes;
 
+	private final String TRAIN_DATA = "dataset/train.txt";
+	private final String TRAIN_ARFF = "dataset/train.arff";
+	private final String TEST_DATA = "dataset/test.txt";
+	private final String TEST_ARFF = "dataset/test.arff";
+
 	WekaClassifier(){
 
 		 //Initialize the FilteredClassifier
@@ -59,11 +64,12 @@ public class WekaClassifier {
 
 	}
 
-	public void prepare() throws IOException{
-		trainData = loadRawDataset("dataset/train.txt");
-	}
-
+	/*
+	 * load training data and set feature generators
+	 */
 	public void transform() throws Exception{
+		trainData = loadRawDataset(TRAIN_DATA);
+		saveArff(trainData,TRAIN_ARFF);
 		// create the filter and set the attribute to be transformed from text into a feature vector (the last one)
 		StringToWordVector filter = new StringToWordVector();
 		filter.setAttributeIndices("last"); 
@@ -77,10 +83,20 @@ public class WekaClassifier {
 
 	}
 
+	/*
+	 * build the classifier with the Training data
+	 */
 	public void fit() throws Exception{
 		classifier.buildClassifier(trainData);
 	}
 
+
+
+	/*
+	 * classify a new message into spam or ham.
+	 * @param message to be classified.
+	 * @return a class label (spam or ham )
+	 */
 	public String predict(String text) throws Exception  {
 
 			Instances newDataset = new Instances("testdata", fvWekaAttributes, 1);
@@ -93,19 +109,24 @@ public class WekaClassifier {
 
 			double pred = classifier.classifyInstance(newinstance);
 
-			System.out.println("Class predicted: " + trainData.classAttribute().value((int) pred));
-			return trainData.classAttribute().value((int) pred);
+			System.out.println("Class predicted: " + newDataset.classAttribute().value((int) pred));
+			return newDataset.classAttribute().value((int) pred);
 	}
 
+	/*
+	 * evaluate the classifier with the Test data
+	 * @return a class label (spam or ham )
+	 */
 	public String evaluate() throws Exception{
-		testData = loadRawDataset("dataset/test.txt");
+		testData = loadRawDataset(TEST_DATA);
+		saveArff(testData,TRAIN_ARFF);
 		Evaluation eval = new Evaluation(testData);
 		eval.evaluateModel(classifier, testData);
 		System.out.println(eval.toSummaryString());
 		return eval.toSummaryString();
 	}
 
-	/**
+	/*
 	 * This method loads the model to be used as classifier.
 	 * @param fileName The name of the file that stores the text.
 	 */
@@ -125,7 +146,7 @@ public class WekaClassifier {
 
 
 
-	/**
+	/*
 	 * This method saves the trained model into a file. This is done by
 	 * simple serialization of the classifier object.
 	 * @param fileName The name of the file that will store the trained model.
@@ -143,17 +164,17 @@ public class WekaClassifier {
 		}
 	}
 
-	/**
+	/*
 	 * Loads a dataset in space seperated text file and convert it to Arff format.
 	 * @param fileName The name of the file.
 	 */
 	public Instances loadRawDataset (String filename)  throws IOException
 	{
 		 /* 
-		    Create an empty training set
-			name the relation “Rel”.
-			set intial capacity of 10*
-		*/	
+		  *  Create an empty training set
+		  *  name the relation “Rel”.
+		  *  set intial capacity of 10*
+		  */	
 		 Instances dataset = new Instances("Rel", fvWekaAttributes, 10);
 
 		 // Set class index
@@ -228,16 +249,18 @@ public class WekaClassifier {
 			e.printStackTrace();
 		}
 	}
-
+	/**
+	 * Main method. With an example usage of this class.
+	 */
 	public static void main(String[] args) throws Exception{
+
 		WekaClassifier wt = new WekaClassifier();
-		wt.prepare();
-		wt.transform();
-		wt.fit();
-		wt.saveModel("models/sms.dat");
-		// wt.loadModel("models/sms.dat");
+		// wt.transform();
+		// wt.fit();
+		// wt.saveModel("models/sms.dat");
+		wt.loadModel("models/sms.dat");
 		wt.evaluate();
 		wt.predict("how are you ?");
-		wt.predict("free food for you");
+		wt.predict("u have won the 1 lakh prize");
 	}
 }
