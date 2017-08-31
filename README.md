@@ -1,4 +1,4 @@
-# spam-classification-weka-java
+# spam SMS classification in weka using java
 Spam email/sms Classification using Weka Machine learning in Java
 
 
