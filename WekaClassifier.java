@@ -185,7 +185,7 @@ public class WekaClassifier {
             ObjectInputStream in = new ObjectInputStream(new FileInputStream(fileName));
             Object tmp = in .readObject();
             classifier = (FilteredClassifier) tmp; in .close();
-            System.out.println("Loaded model: " + fileName);
+            LOGGER.info("Loaded model: " + fileName);
         } catch (IOException e) {
             LOGGER.warning(e.getMessage());
         } catch (ClassNotFoundException e) {
@@ -204,7 +204,7 @@ public class WekaClassifier {
             ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(fileName));
             out.writeObject(classifier);
             out.close();
-            System.out.println("Saved model: " + fileName);
+            LOGGER.info("Saved model: " + fileName);
         } catch (IOException e) {
             LOGGER.warning(e.getMessage());
         }
@@ -246,10 +246,12 @@ public class WekaClassifier {
 
             }
 
-        } catch (IOException e) {
+        } 
+        catch (IOException e) {
             LOGGER.warning(e.getMessage());
-        } catch (ArrayIndexOutOfBoundsException e) {
-            System.out.println("invalid row");
+        } 
+        catch (ArrayIndexOutOfBoundsException e) {
+            LOGGER.info("invalid row.");
         }
         return dataset;
 
