@@ -26,10 +26,11 @@ import weka.core.tokenizers.NGramTokenizer;
 import weka.filters.unsupervised.attribute.StringToWordVector;
 
 
-
-// http://geekswithblogs.net/razan/archive/2011/11/08/creating-a-simple-sparse-arff-file.aspx
-// http://weka.wikispaces.com/Programmatic+Use
-
+/**
+ * This class implements a Multinomial NaiveBayes text classifier using WEKA.
+ * @author Alfred Francis - https://alfredfrancis.github.io
+ * @see http://weka.wikispaces.com/Programmatic+Use
+ */
 public class WekaClassifier {
 
 	private FilteredClassifier classifier;
@@ -68,17 +69,24 @@ public class WekaClassifier {
 	 * load training data and set feature generators
 	 */
 	public void transform() throws Exception{
+
 		trainData = loadRawDataset(TRAIN_DATA);
 		saveArff(trainData,TRAIN_ARFF);
+
 		// create the filter and set the attribute to be transformed from text into a feature vector (the last one)
 		StringToWordVector filter = new StringToWordVector();
 		filter.setAttributeIndices("last"); 
+
+		//add ngram tokenizer to filter with min and max length set to 1 and use word delimeter
 		NGramTokenizer tokenizer = new NGramTokenizer();
 		tokenizer.setNGramMinSize(1);
 		tokenizer.setNGramMaxSize(1);
 		tokenizer.setDelimiters("\\W");
 		filter.setTokenizer(tokenizer);
+
+		//convert tokens to lowercase
 		filter.setLowerCaseTokens(true);
+
 		classifier.setFilter(filter); 
 
 	}
@@ -99,18 +107,26 @@ public class WekaClassifier {
 	 */
 	public String predict(String text) throws Exception  {
 
+			// create new Instance for prediction.
+			DenseInstance newinstance = new DenseInstance(2);
+
+			//weka demand a dataset to be set to new Instance
 			Instances newDataset = new Instances("testdata", fvWekaAttributes, 1);
 			newDataset.setClassIndex(0);
-		
-			DenseInstance newinstance = new DenseInstance(2);
-			newinstance.setDataset(newDataset); 
 
+			newinstance.setDataset(newDataset); 
+			
+			// text attribute value set to value to be predicted
 			newinstance.setValue(fvWekaAttributes.get(1), text);
 
+			// predict most likely class for the instance
 			double pred = classifier.classifyInstance(newinstance);
 
-			System.out.println("Class predicted: " + newDataset.classAttribute().value((int) pred));
-			return newDataset.classAttribute().value((int) pred);
+			// get original label
+			String label =  newDataset.classAttribute().value((int) pred);
+
+			System.out.println("Class predicted: " + label);
+			return label;
 	}
 
 	/*
@@ -143,8 +159,6 @@ public class WekaClassifier {
 			System.out.println("Problem found when reading: " + fileName);
 		}
 	}
-
-
 
 	/*
 	 * This method saves the trained model into a file. This is done by
