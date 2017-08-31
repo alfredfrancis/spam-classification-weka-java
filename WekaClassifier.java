@@ -188,7 +188,8 @@ public class WekaClassifier {
         try {
             ObjectInputStream in = new ObjectInputStream(new FileInputStream(fileName));
             Object tmp = in .readObject();
-            classifier = (FilteredClassifier) tmp; in .close();
+            classifier = (FilteredClassifier) tmp;
+            in .close();
             System.out.println("Loaded model: " + fileName);
         } catch (IOException e) {
             LOGGER.warning(e.getMessage());
@@ -235,8 +236,6 @@ public class WekaClassifier {
         try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
             for (String line;
                 (line = br.readLine()) != null;) {
-                try {
-
                     // split at first occurance of n no. of words
                     String[] parts = line.split("\\s+", 2);
 
@@ -249,15 +248,15 @@ public class WekaClassifier {
 
                         // add row to instances
                         dataset.add(row);
-                    }
-                } catch (ArrayIndexOutOfBoundsException e) {
-                    System.out.println("invalid row");
                 }
 
             }
 
         } catch (IOException e) {
             LOGGER.warning(e.getMessage());
+        }
+        catch (ArrayIndexOutOfBoundsException e) {
+            System.out.println("invalid row");
         }
         return dataset;
 
@@ -316,8 +315,8 @@ public class WekaClassifier {
         }
 
         //run few predictions
-        LOGGER.info(wt.predict("how are you ?"));
-        LOGGER.info(wt.predict("u have won the 1 lakh prize"));
+        LOGGER.info("text 'how are you' is "+wt.predict("how are you ?"));
+        LOGGER.info("text 'u have won the 1 lakh prize' is "+wt.predict("u have won the 1 lakh prize"));
 
         //run evaluation
  	    LOGGER.info(wt.evaluate());
