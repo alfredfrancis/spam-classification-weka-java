@@ -9,7 +9,6 @@ import java.io.FileOutputStream;
 
 import java.util.List;
 import java.util.ArrayList;
-
 import weka.classifiers.Evaluation;
 import weka.classifiers.bayes.NaiveBayesMultinomial;
 import weka.classifiers.meta.FilteredClassifier;
@@ -34,22 +33,32 @@ import weka.filters.unsupervised.attribute.StringToWordVector;
 public class WekaClassifier {
 
 	private FilteredClassifier classifier;
+
+	//declare train and test data Instances
 	private Instances trainData;
 	private Instances testData;
-	private ArrayList<Attribute> fvWekaAttributes;
 
+	//declare attributes of Instance
+	private ArrayList<Attribute> wekaAttributes;
+
+	//declare and initialize file locations
 	private final String TRAIN_DATA = "dataset/train.txt";
-	private final String TRAIN_ARFF = "dataset/train.arff";
+	private final String TRAIN_ARFF_ARFF = "dataset/train.arff";
 	private final String TEST_DATA = "dataset/test.txt";
-	private final String TEST_ARFF = "dataset/test.arff";
+	private final String TEST_DATA_ARFF = "dataset/test.arff";
 
 	WekaClassifier(){
 
-		 //Initialize the FilteredClassifier
+		 /*
+		  * Class for running an arbitrary classifier on data that has been passed through an arbitrary filter
+		  * Training data and test instances will be processed by the filter without changing their structure
+		  */
 		 classifier = new FilteredClassifier();
+
+		 // set Multinomial NaiveBayes as arbitrary classifier
 		 classifier.setClassifier(new NaiveBayesMultinomial());
 		 
-		 // Declare text attribute
+		 // Declare text attribute to hold the message
 		 Attribute attribute_text = new Attribute("text",(List<String>) null);
 
 		 // Declare the label attribute along with its values
@@ -59,39 +68,41 @@ public class WekaClassifier {
 		 Attribute classAttribute = new Attribute("label", classAttributeValues);
 
 		 // Declare the feature vector
-		 fvWekaAttributes = new ArrayList<Attribute>();
-		 fvWekaAttributes.add(classAttribute);
-		 fvWekaAttributes.add(attribute_text);
+		 wekaAttributes = new ArrayList<Attribute>();
+		 wekaAttributes.add(classAttribute);
+		 wekaAttributes.add(attribute_text);
 
 	}
 
-	/*
+	/**
 	 * load training data and set feature generators
 	 */
 	public void transform() throws Exception{
 
 		trainData = loadRawDataset(TRAIN_DATA);
-		saveArff(trainData,TRAIN_ARFF);
+		saveArff(trainData,TRAIN_ARFF_ARFF);
 
 		// create the filter and set the attribute to be transformed from text into a feature vector (the last one)
 		StringToWordVector filter = new StringToWordVector();
 		filter.setAttributeIndices("last"); 
 
-		//add ngram tokenizer to filter with min and max length set to 1 and use word delimeter
+		//add ngram tokenizer to filter with min and max length set to 1
 		NGramTokenizer tokenizer = new NGramTokenizer();
 		tokenizer.setNGramMinSize(1);
 		tokenizer.setNGramMaxSize(1);
+		//use word delimeter
 		tokenizer.setDelimiters("\\W");
 		filter.setTokenizer(tokenizer);
 
 		//convert tokens to lowercase
 		filter.setLowerCaseTokens(true);
 
+		//add filter to classifier
 		classifier.setFilter(filter); 
 
 	}
 
-	/*
+	/**
 	 * build the classifier with the Training data
 	 */
 	public void fit() throws Exception{
@@ -100,7 +111,7 @@ public class WekaClassifier {
 
 
 
-	/*
+	/**
 	 * classify a new message into spam or ham.
 	 * @param message to be classified.
 	 * @return a class label (spam or ham )
@@ -111,38 +122,43 @@ public class WekaClassifier {
 			DenseInstance newinstance = new DenseInstance(2);
 
 			//weka demand a dataset to be set to new Instance
-			Instances newDataset = new Instances("testdata", fvWekaAttributes, 1);
+			Instances newDataset = new Instances("testdata", wekaAttributes, 1);
 			newDataset.setClassIndex(0);
 
 			newinstance.setDataset(newDataset); 
 			
 			// text attribute value set to value to be predicted
-			newinstance.setValue(fvWekaAttributes.get(1), text);
+			newinstance.setValue(wekaAttributes.get(1), text);
 
 			// predict most likely class for the instance
 			double pred = classifier.classifyInstance(newinstance);
 
 			// get original label
 			String label =  newDataset.classAttribute().value((int) pred);
-
-			System.out.println("Class predicted: " + label);
 			return label;
 	}
 
-	/*
+	/**
 	 * evaluate the classifier with the Test data
-	 * @return a class label (spam or ham )
+	 * @return evaluation summary as string
 	 */
 	public String evaluate() throws Exception{
-		testData = loadRawDataset(TEST_DATA);
-		saveArff(testData,TRAIN_ARFF);
+		//load testdata
+
+		if(new File(TEST_DATA_ARFF).exists()){
+			testData = loadArff(TEST_DATA_ARFF);
+			testData.setClassIndex(0);
+		}else{
+			testData = loadRawDataset(TEST_DATA);
+			saveArff(testData,TEST_DATA_ARFF);
+		}
+
 		Evaluation eval = new Evaluation(testData);
 		eval.evaluateModel(classifier, testData);
-		System.out.println(eval.toSummaryString());
 		return eval.toSummaryString();
 	}
 
-	/*
+	/**
 	 * This method loads the model to be used as classifier.
 	 * @param fileName The name of the file that stores the text.
 	 */
@@ -160,7 +176,7 @@ public class WekaClassifier {
 		}
 	}
 
-	/*
+	/**
 	 * This method saves the trained model into a file. This is done by
 	 * simple serialization of the classifier object.
 	 * @param fileName The name of the file that will store the trained model.
@@ -178,7 +194,7 @@ public class WekaClassifier {
 		}
 	}
 
-	/*
+	/**
 	 * Loads a dataset in space seperated text file and convert it to Arff format.
 	 * @param fileName The name of the file.
 	 */
@@ -189,7 +205,7 @@ public class WekaClassifier {
 		  *  name the relation “Rel”.
 		  *  set intial capacity of 10*
 		  */	
-		 Instances dataset = new Instances("Rel", fvWekaAttributes, 10);
+		 Instances dataset = new Instances("Rel", wekaAttributes, 10);
 
 		 // Set class index
 		 dataset.setClassIndex(0);
@@ -206,8 +222,8 @@ public class WekaClassifier {
 		        	if (!parts[0].isEmpty() && !parts[1].isEmpty()){
 
 		        	  DenseInstance row = new DenseInstance(2);
-					  row.setValue(fvWekaAttributes.get(0), parts[0]);
-					  row.setValue(fvWekaAttributes.get(1), parts[1]);	
+					  row.setValue(wekaAttributes.get(0), parts[0]);
+					  row.setValue(wekaAttributes.get(1), parts[1]);	
 
 					  // add row to instances
 					  dataset.add(row);
@@ -232,16 +248,18 @@ public class WekaClassifier {
 	 * it has a wrong format, the attribute trainData is null.
 	 * @param fileName The name of the file that stores the dataset.
 	 */
-	public void loadArff(String fileName) {
+	public Instances loadArff(String fileName) {
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(fileName));
 			ArffReader arff = new ArffReader(reader);
-			trainData = arff.getData();
-			System.out.println("dataset: "+fileName);
+			Instances dataset = arff.getData();
+			System.out.println("loaded dataset: "+fileName);
 			reader.close();
+			return dataset;
 		}
 		catch (IOException e) {
 			System.out.println("Problem found when reading: "+fileName);
+			return null;
 		}
 	}
 
@@ -263,18 +281,29 @@ public class WekaClassifier {
 			e.printStackTrace();
 		}
 	}
+
 	/**
 	 * Main method. With an example usage of this class.
 	 */
 	public static void main(String[] args) throws Exception{
 
+		final String MODEL = "models/sms.dat";
+
 		WekaClassifier wt = new WekaClassifier();
-		// wt.transform();
-		// wt.fit();
-		// wt.saveModel("models/sms.dat");
-		wt.loadModel("models/sms.dat");
-		wt.evaluate();
-		wt.predict("how are you ?");
-		wt.predict("u have won the 1 lakh prize");
+
+		if(new File(MODEL).exists()){
+			wt.loadModel(MODEL);
+		}else{
+			wt.transform();
+			wt.fit();
+			wt.saveModel(MODEL);
+		}
+
+		//run few predictions
+		System.out.println(wt.predict("how are you ?"));
+		System.out.println(wt.predict("u have won the 1 lakh prize"));
+
+		//run evaluation
+		System.out.println(wt.evaluate());
 	}
 }
