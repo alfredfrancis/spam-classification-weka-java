@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 
+import java.util.logging.Logger;
 import java.util.List;
 import java.util.ArrayList;
 import weka.classifiers.Evaluation;
@@ -30,6 +31,8 @@ import weka.filters.unsupervised.attribute.StringToWordVector;
  * @see http://weka.wikispaces.com/Programmatic+Use
  */
 public class WekaClassifier {
+
+	private static Logger LOGGER = Logger.getLogger("WekaClassifier");
 
     private FilteredClassifier classifier;
 
@@ -100,7 +103,7 @@ public class WekaClassifier {
 	        classifier.setFilter(filter);
     	}
     	catch(Exception e){
-			e.printStackTrace();
+			LOGGER.warning(e.getMessage());
     	}
 
 
@@ -114,7 +117,7 @@ public class WekaClassifier {
         	classifier.buildClassifier(trainData);
     	}
     	catch(Exception e){
-			e.printStackTrace();
+			LOGGER.warning(e.getMessage());
     	}
     }
 
@@ -146,7 +149,7 @@ public class WekaClassifier {
 	        return newDataset.classAttribute().value((int) pred);
     	}
     	catch(Exception e){
-			e.printStackTrace();
+			LOGGER.warning(e.getMessage());
 			return null;
     	}
     }
@@ -172,7 +175,7 @@ public class WekaClassifier {
 	        return eval.toSummaryString();
     	}
     	catch(Exception e){
-			e.printStackTrace();
+			LOGGER.warning(e.getMessage());
 			return null;
     	}
     }
@@ -187,9 +190,11 @@ public class WekaClassifier {
             Object tmp = in .readObject();
             classifier = (FilteredClassifier) tmp; in .close();
             System.out.println("Loaded model: " + fileName);
-        } catch (Exception e) {
-            // Given the cast, a ClassNotFoundException must be caught along with the IOException
-            System.out.println("Problem found when reading: " + fileName);
+        } catch (IOException e) {
+            LOGGER.warning(e.getMessage());
+        }
+        catch (ClassNotFoundException e){
+        	LOGGER.warning(e.getMessage());
         }
     }
 
@@ -206,7 +211,7 @@ public class WekaClassifier {
             out.close();
             System.out.println("Saved model: " + fileName);
         } catch (IOException e) {
-            System.out.println("Problem found when writing: " + fileName);
+            LOGGER.warning(e.getMessage());
         }
     }
 
@@ -252,7 +257,7 @@ public class WekaClassifier {
             }
 
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.warning(e.getMessage());
         }
         return dataset;
 
@@ -272,7 +277,7 @@ public class WekaClassifier {
             reader.close();
             return dataset;
         } catch (IOException e) {
-            System.out.println("Problem found when reading: " + fileName);
+        	LOGGER.warning(e.getMessage());
             return null;
         }
     }
@@ -290,7 +295,7 @@ public class WekaClassifier {
             arffSaverInstance.setFile(new File(filename));
             arffSaverInstance.writeBatch();
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.warning(e.getMessage());
         }
     }
 
@@ -298,7 +303,6 @@ public class WekaClassifier {
      * Main method. With an example usage of this class.
      */
     public static void main(String[] args) throws Exception {
-
         final String MODEL = "models/sms.dat";
 
         WekaClassifier wt = new WekaClassifier();
@@ -312,10 +316,10 @@ public class WekaClassifier {
         }
 
         //run few predictions
-        System.out.println(wt.predict("how are you ?"));
-        System.out.println(wt.predict("u have won the 1 lakh prize"));
+        LOGGER.info(wt.predict("how are you ?"));
+        LOGGER.info(wt.predict("u have won the 1 lakh prize"));
 
         //run evaluation
-        System.out.println(wt.evaluate());
+ 	    LOGGER.info(wt.evaluate());
     }
 }
